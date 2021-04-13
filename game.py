@@ -1,11 +1,13 @@
 import numpy as np
+import time
 
 def game_over(state):
     max_in_a_row = np.absolute(get_lanes(state).sum(axis=-1)).max()
     if max_in_a_row == 3:
         return True
-    else:
-        return False
+    if not 0 in state:
+        return True
+    return False
     
 def get_lanes(state):
     lanes = np.zeros((8,3))
@@ -16,11 +18,10 @@ def get_lanes(state):
     return lanes
 
 def play(model, state):
-    max_value = -100
     possible_states = None
     for i in range(3):
         for j in range(3):
-            print(state[i,j])
+            # print(state[i,j])
             if not state[i,j] == 0: continue
             # print('found one')
             
@@ -30,7 +31,7 @@ def play(model, state):
             else:
                 possible_states = np.concatenate([possible_states, state.reshape((1,3,3))])
             state[i,j] = 0
-            print(possible_states)
+            # print(possible_states)
     print('found {} possible_states'.format(possible_states.shape[0]))
     print(possible_states)
     possible_states = possible_states.reshape((-1,3,3))
@@ -77,14 +78,20 @@ class Model():
         print('training model')
         
 
-if __name__ == 'main':
+if __name__ == '__main__':
     model = Model()
     state = np.zeros((3,3))
     print(state)
     flip = 1
 
     while True:
-        flip *= 1
+        flip *= -1
         state = flip*play(model, flip*state)
+        
+        print(state)
+        time.sleep(25)
+        
         if game_over(state):
+            print('game over')
             break
+
