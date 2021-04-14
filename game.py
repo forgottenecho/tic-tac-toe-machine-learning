@@ -76,7 +76,9 @@ class Model():
     
     def fit(x, y, lr=0.01):
         print('training model')
-        
+
+def critic(trace):
+    xtrain, ytrain
 
 if __name__ == '__main__':
     model = Model()
@@ -94,4 +96,5 @@ if __name__ == '__main__':
         if game_over(state):
             print('game over')
             break
-
+    print('final state')
+    print(state)
