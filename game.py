@@ -47,12 +47,12 @@ def play(model, state):
 
 class Model():
     def __init__(self, W=None, b=None):
-        if W == None:
+        if W is None:
             self.W = np.random.normal(size=(4))
         else:
-            if not W.shape == (4): raise Exception('incorrect size')
+            if not W.shape == (4,): raise Exception('incorrect shape')
             self.W = W.copy()
-        if b == None:
+        if b is None:
             self.b = 0
         else:
             self.b = float(b)
@@ -121,8 +121,8 @@ def critic(trace, model):
 
 if __name__ == '__main__':
     #optimal model after 50k games
-    # model = Model(np.array([2.76e-13,5.66e-03,-5.499e+01,-2.284e-01]), 99.9)
-    model = Model()
+    model = Model(np.array([2.76e-13,5.66e-03,-5.499e+01,-2.284e-01]), 99.9)
+    # model = Model()
     model_frozen = Model()
     
     won = 0.0
