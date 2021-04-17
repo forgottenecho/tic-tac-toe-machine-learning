@@ -2,12 +2,18 @@ import numpy as np
 import time
 
 def game_over(state):
-    max_in_a_row = np.absolute(get_lanes(state).sum(axis=-1)).max()
+    max_in_a_row = get_lanes(state).sum(axis=-1).max()
+    min_in_a_row = get_lanes(state).sum(axis=-1).min()
     if max_in_a_row == 3:
-        return True
+        print('x won')
+        return 1
+    if min_in_a_row == -3:
+        print('o won')
+        return 2
     if not 0 in state:
-        return True
-    return False
+        print('tie game')
+        return 3
+    return 0
     
 def get_lanes(state):
     lanes = np.zeros((8,3))
@@ -32,11 +38,11 @@ def play(model, state):
                 possible_states = np.concatenate([possible_states, state.reshape((1,3,3))])
             state[i,j] = 0
             # print(possible_states)
-    print('found {} possible_states'.format(possible_states.shape[0]))
-    print(possible_states)
+    # print('found {} possible_states'.format(possible_states.shape[0]))
+    # print(possible_states)
     possible_states = possible_states.reshape((-1,3,3))
     values = model.predict(possible_states)
-    print(values)
+    # print(values)
     return possible_states[values.argmax()]
 
 class Model():
@@ -50,6 +56,7 @@ class Model():
             self.b = 0
         else:
             self.b = float(b)
+        print(self.W)
         
     def predict(self, possible_states):
         size = possible_states.shape[0]
@@ -74,27 +81,98 @@ class Model():
             if opps == 3: features[3] += 1
         return features
     
-    def fit(x, y, lr=0.01):
+    def fit(self, train_states, ytrain, lr=0.01):
         print('training model')
+        for i in range(train_states.shape[0]):
+            x = self.get_features(train_states[i])
+            diff = ytrain[i] - (self.W.dot(x) + self.b)
+            self.b += lr * diff
+            for j in range(self.W.shape[0]):
+                self.W[j] += lr * diff * x[j]
+            print(self.W)
+            print(self.b)
+        print('done training')
+        
 
-def critic(trace):
-    xtrain, ytrain
+def critic(trace, model):
+    flip = -1
+    xtrain = np.zeros((trace.shape[0]-1,3,3))
+    ytrain = np.zeros((trace.shape[0]-1))
+    for i in range(trace.shape[0]-1):
+        flip *= -1
+        xtrain[i] = flip*trace[i]
+        
+        value = None
+        type = game_over(flip*trace[i+1])
+        if type == 0:
+            value = model.predict(flip*trace[i+1].reshape(1,3,3))
+        elif type == 1:
+            # you won
+            value = 100
+        elif type == 2:
+            # you lost fool
+            value = -100
+        elif type == 3:
+            # you tied
+            value = -10
+        ytrain[i] = value
+    return xtrain, ytrain
+    
 
 if __name__ == '__main__':
+    #optimal model after 50k games
+    # model = Model(np.array([2.76e-13,5.66e-03,-5.499e+01,-2.284e-01]), 99.9)
     model = Model()
-    state = np.zeros((3,3))
-    print(state)
-    flip = 1
-
+    model_frozen = Model()
+    
+    won = 0.0
+    total = 0.0
+    ties = 0.0
     while True:
-        flip *= -1
-        state = flip*play(model, flip*state)
-        
+        # time.sleep(5)
+        total += 1
+        state = np.zeros((3,3))
         print(state)
-        time.sleep(25)
+        flip = -1
         
-        if game_over(state):
-            print('game over')
-            break
-    print('final state')
-    print(state)
+        trace = state.copy().reshape(1,3,3)
+        while True:
+            state = play(model, state)
+            trace = np.concatenate([trace,state.reshape(1,3,3)])
+            print(state)
+            
+            type = game_over(state)
+            if type:
+                print('game over' +str(type))
+                if type == 1:
+                    won += 1
+                elif type == 3:
+                    ties += 1
+                break
+                
+            # flip *= -1
+            state = flip*play(model_frozen, flip*state)
+            trace = np.concatenate([trace,state.reshape(1,3,3)])
+            
+            print(state)
+            # time.sleep(25)
+            
+            type = game_over(state)
+            if type:
+                print('game over' +str(type))
+                if type == 1:
+                    won += 1
+                elif type == 3:
+                    ties += 1
+                break
+        
+        print('final state')
+        print(state)  
+        xtrain, ytrain = critic(trace, model)
+        model.fit(xtrain, ytrain)
+        print(won)
+        print(ties)
+        print(total)
+        print(float(won)/total)
+        if total%500 == 0:
+            time.sleep(2)
