@@ -1,5 +1,6 @@
 import numpy as np
 import time
+import matplotlib.pyplot as plt
 
 # returns an integer representing game status, nonzero if game is over
 def game_over(state):
@@ -154,8 +155,9 @@ if __name__ == '__main__':
     won = 0.0
     total = 0.0
     ties = 0.0
+    history = []
     
-    # train forever
+    # train until terminating condition
     while True:
         # time.sleep(5)
         total += 1
@@ -204,10 +206,21 @@ if __name__ == '__main__':
         xtrain, ytrain = critic(trace, model)
         model.fit(xtrain, ytrain)
         
-        # print metrics
+        # handle metrics
+        win_rate = float(won)/total
         print('Total games you have won: {}'.format(won))
         print('Total ties: {}'.format(ties))
         print('Total games you have played: {}'.format(total))
-        print('Win rate: {}'.format(float(won)/total))
+        print('Win rate: {}'.format(win_rate))
+        history.append(win_rate)
+        
+        # terminating condition
+        if win_rate > .8 and total > 3000:
+            break
+        
         # if total%500 == 0:
             # time.sleep(2)
+    
+    plt.title('Win Rate Per Iteration')
+    plt.plot(history)
+    plt.show()
