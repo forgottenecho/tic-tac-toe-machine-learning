@@ -45,6 +45,8 @@ def play(model, state):
                 possible_states = np.concatenate([possible_states, state.reshape((1,3,3))])
             state[i,j] = 0
     
+    # shuffle possible moves and then value them
+    np.random.shuffle(possible_states)
     possible_states = possible_states.reshape((-1,3,3))
     values = model.predict(possible_states)
     
@@ -144,8 +146,8 @@ def critic(trace, model):
 # this main is rather botched together but it's mostly PoC for me
 if __name__ == '__main__':
     # create two models to play against each other
-    model = Model(np.array([2.76e-13,5.66e-03,-5.499e+01,-2.284e-01]), 99.9) # optimal model after 50k games
-    # model = Model()
+    # model = Model(np.array([2.76e-13,5.66e-03,-5.499e+01,-2.284e-01]), 99.9) # optimal model after 50k games
+    model = Model()
     model_frozen = Model()
     
     # metrics
@@ -182,9 +184,9 @@ if __name__ == '__main__':
             state = flip*play(model_frozen, flip*state)
             trace = np.concatenate([trace,state.reshape(1,3,3)])
             print(state)
-            time.sleep(25)
+            # time.sleep(25)
             
-            # check game
+            # check game over1
             type = game_over(state)
             if type:
                 print('game over' +str(type))
@@ -207,5 +209,5 @@ if __name__ == '__main__':
         print('Total ties: {}'.format(ties))
         print('Total games you have played: {}'.format(total))
         print('Win rate: {}'.format(float(won)/total))
-        if total%500 == 0:
-            time.sleep(2)
+        # if total%500 == 0:
+            # time.sleep(2)
