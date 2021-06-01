@@ -188,7 +188,7 @@ if __name__ == '__main__':
             print(state)
             # time.sleep(25)
             
-            # check game over1
+            # check game over
             type = game_over(state)
             if type:
                 print('game over' +str(type))
