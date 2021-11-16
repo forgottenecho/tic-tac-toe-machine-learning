@@ -1,4 +1,4 @@
-# tic-tac-toe-reinforcement-learning
+# tic-tac-toe-machine-learning
 A full-circle machine learning system for tic tac toe.  
 
 Task: to win tic tac toe  
