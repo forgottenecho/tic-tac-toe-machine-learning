@@ -6,9 +6,9 @@ Performance: win ratio
 Experience: learning model plays against a fixed-weight model  
 
 ## Dependencies
-reprint
-numpy
-matplotlib
+- reprint
+- numpy
+- matplotlib
 
 ## Usage
 Just run the script and wait for it to finish training.
@@ -55,4 +55,4 @@ Program status: PLAYING
 - allow human to play the trained AI
 - better feature engineering, last weight never gets changed, also model's win_rate is too low
 - implement weight regularization, model tends to converge to ridiculously large weights 
-- reset frozen_model's weights on every new game
+- reset frozen_model's weights to RANDOM on every new game (currently always zero)
