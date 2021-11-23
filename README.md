@@ -5,6 +5,10 @@ Task: to win tic tac toe
 Performance: win ratio  
 Experience: learning model plays against a fixed-weight model  
 
+## Dependencies
+reprint
+numpy
+matplotlib
 ## Game Representation
 - the board is a 3x3 numpy matrix
 - `0` denotes an empty space
@@ -23,6 +27,7 @@ Experience: learning model plays against a fixed-weight model
 - weights and biases are updated by performing gradient descent on J
 
 ## To Do
+- Make the output overwrite-able, so that you can watch the model's weights and game state change and get overwritten
 - implement weight regularization, model tends to converge to ridiculously large weights 
 - human_readable() to turn board into x's and o's instead of 1's and -1's
 - reset frozen_model's weights on every new game
