@@ -33,17 +33,19 @@ class Board():
         self.state = np.zeros((3,3))
         self.trace = self.state.copy().reshape(1,3,3)
     
-    def get_board_status(self):
-        
+    def _get_board_status(self):
+        return Board.get_board_status(self.state)
+
+    def get_board_status(state):
         # tallies move count for each playable lane
-        max_in_a_row = Board.get_lanes(self.state).sum(axis=-1).max()
-        min_in_a_row = Board.get_lanes(self.state).sum(axis=-1).min()
+        max_in_a_row = Board.get_lanes(state).sum(axis=-1).max()
+        min_in_a_row = Board.get_lanes(state).sum(axis=-1).min()
     
         if max_in_a_row == 3*Moves.X:
             return BoardStatus.XWIN
         if min_in_a_row == 3*Moves.O:
             return BoardStatus.OWIN
-        if not Moves.EMPTY in self.state:
+        if not Moves.EMPTY in state:
             return BoardStatus.TIE
         return BoardStatus.INPROGRESS
 
@@ -80,7 +82,7 @@ class Board():
         self.trace = np.concatenate([self.trace,self.state.reshape(1,3,3)])
 
         # return the status
-        return self.get_board_status()
+        return self._get_board_status()
     
     # outputs array of human characters from sate
     def human_readable(self):
@@ -106,7 +108,7 @@ class Model():
         
         # model weights
         if W is None:
-            self.W = np.random.normal(size=(4))
+            self.W = np.zeros((4))
         else:
             if not W.shape == (4,): raise Exception('incorrect shape')
             self.W = W.copy()
@@ -169,57 +171,86 @@ class Model():
         # print('done training')
 
     # generates training data given a matrix of chronological game states
-    def critic(trace, model):
-        # flip is used to train on opponents data
-        flip = -1
-        
-        xtrain = np.zeros((trace.shape[0]-1,3,3))
-        ytrain = np.zeros((trace.shape[0]-1))
-        for i in range(trace.shape[0]-1):
-            # makes all states look like x's perspective
-            flip *= -1        
-            xtrain[i] = flip*trace[i]
+    def generate_dataset(self, trace):
+        # discard the initial state of all 0s
+        trace = trace[1:]
+
+        # ascertain who played first
+        first_player = None
+        start_idx = None
+        if Moves.X in trace[0]:
+            first_player = Moves.X
+            start_idx = 0
+        elif Moves.O in trace[0]:
+            first_player = Moves.O
+            start_idx = 1
+        else:
+            raise('Couldn\'t find first player')
+
+        # will later hold the training dataset
+        xtrain = None
+        ytrain_list = []
+
+        # loop through the game trace
+        for i in range(start_idx, trace.shape[0], 2):
             
             value = None
-            type = game_over(flip*trace[i+1])
-            if type == 0:
+            board_status = None
+            if i == trace.shape[0]-1:
+                board_status = Board.get_board_status(trace[i])
+            else:
+                board_status = Board.get_board_status(trace[i+1])
+            if board_status == BoardStatus.INPROGRESS:
                 # training value is set to our current prediction of NEXT state
-                value = model.predict(flip*trace[i+1].reshape(1,3,3))
-            elif type == 1:
+                value = self.predict(trace[i+1].reshape(1,3,3))[0]
+            elif board_status == BoardStatus.XWIN:
                 # you won
                 value = 100
-            elif type == 2:
+            elif board_status == BoardStatus.OWIN:
                 # you lost fool
                 value = -100
-            elif type == 3:
+            elif board_status == BoardStatus.TIE:
                 # you tied
                 value = -10
-            ytrain[i] = value
-        return xtrain, ytrain
+            
+            # store the values
+            if xtrain is None:
+                xtrain = trace[i].copy().reshape(1,3,3)
+            else:
+                xtrain = np.concatenate([xtrain, trace[i].reshape(1,3,3)])
+            ytrain_list.append(value)
+
+        return xtrain, np.array(ytrain_list)
     
 # this main is rather botched together but it's mostly PoC for me
 if __name__ == '__main__':
-    # USER PARAMS - TERMINATING CONDITIONS
+    # USER PARAMS - TERMINATING CONDITIONS both must be met
+    win_rate_stop = 0.8
+    game_num_stop = 3000
+    slow_mode = False
 
     # create two models to play against each other
     # model = Model(np.array([2.76e-13,5.66e-03,-5.499e+01,-2.284e-01]), 99.9) # optimal model after 50k games
     model = Model(player_id=Moves.X)
     model_frozen = Model(player_id=Moves.O)
     board = Board()
+
+    # TODO Model.generate_datset() and some other functions break if the LEARNING model is not set to 'X'! Fix this later.
     
-    # game metrics
+    # training metrics
     learner_won = 0.0
     learner_tied = 0.0
     total_games = 0.0
     history = []
     
-    with output(output_type='dict', initial_len=5, ) as output_lines:
+    with output(output_type='list', initial_len=10) as output_lines:
         # play and train until user-defined terminating condition
         while True:
 
             # new game, tend to metrics and reset board
             total_games += 1
             board.reset_board()
+            output_lines[9] = 'Program status: PLAYING'
 
             # output models' states
             output_lines[0] = 'Model X params:\t\t{:.2f} {:.2f} {:.2f} {:.2f} {:.2f} \tLEARNER'.format(model.W[0],model.W[1],model.W[2],model.W[3],model.b)
@@ -227,7 +258,7 @@ if __name__ == '__main__':
             
             # play one game
             board_status = BoardStatus.INPROGRESS
-            turn_num = 0
+            turn_num = np.random.randint(0,2) # x or o can start, allows all possible training cases
             while board_status == BoardStatus.INPROGRESS:
                 # models take turns playing
                 if turn_num % 2 == 0:
@@ -246,31 +277,38 @@ if __name__ == '__main__':
                 # inc the counter
                 turn_num += 1
 
-            # the game has ended, update metrics accordingly
+                # if slow mode is on, slight delay
+                if slow_mode:
+                    time.sleep(0.5)
+
+            # the game has ended, update metrics and output accordingly
             if board_status == BoardStatus.XWIN:
                 learner_won += 1
             elif board_status == BoardStatus.TIE:
                 learner_tied += 1
-            
-            #TODO FIX TRAINING WITH NEW IMPLEMENTATION
+            output_lines[5] = 'LEARNER Wins:\t{}'.format(learner_won)
+            output_lines[6] = 'LEARNER Losses:\t{}'.format(total_games-learner_won-learner_tied)
+            output_lines[7] = 'LEARNER Ties:\t{}'.format(learner_tied)
+            output_lines[8] = 'Win Rate:\t{:.2f}'.format(float(learner_won)/total_games)
+            output_lines[9] = 'Program status: TRAINING'
+
+
             # train model on this game
-            xtrain, ytrain = critic(trace, model)
+            xtrain, ytrain = model.generate_dataset(board.trace)
             model.fit(xtrain, ytrain)
             
             # handle metrics
             win_rate = float(learner_won)/total_games
-            # print('Total games you have won: {}'.format(won))
-            # print('Total ties: {}'.format(ties))
-            # print('Total games you have played: {}'.format(total))
-            # print('Win rate: {}'.format(win_rate))
+
             history.append(win_rate)
             
             # terminating condition
-            if win_rate > .8 and total_games > 3000:
+            if win_rate > win_rate_stop and total_games > game_num_stop:
                 break
-            
-            # if total%500 == 0:
-                # time.sleep(2)
+
+            # if slow mode is on, slight delay
+            if slow_mode:
+                time.sleep(0.5)
         
         plt.title('Win Rate Per Iteration')
         plt.plot(history)

@@ -27,9 +27,8 @@ matplotlib
 - weights and biases are updated by performing gradient descent on J
 
 ## To Do
-- Make the output overwrite-able, so that you can watch the model's weights and game state change and get overwritten
+- allow human to play the AI
 - implement weight regularization, model tends to converge to ridiculously large weights 
-- human_readable() to turn board into x's and o's instead of 1's and -1's
 - reset frozen_model's weights on every new game
 - encapsulate main loop in a Game class with methods
 	- get_trace()
