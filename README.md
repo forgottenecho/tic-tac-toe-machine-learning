@@ -33,6 +33,7 @@ Win Rate: 0.56
 Win/Loss Rate: 8.61
 Program status: PLAYING
 ```
+![wins per iteration graph](sample_graph.png)
 
 ## Game Representation
 - the board is a 3x3 numpy matrix
