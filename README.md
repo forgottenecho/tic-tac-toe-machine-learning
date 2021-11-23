@@ -25,7 +25,7 @@ Model X params:  -5.04 165.16 -11.01 0.00 -61.34  LEARNER
 Model O params:  0.00 0.00 0.00 0.00 0.00  FROZEN
 - X -
 - O X
-  O -
+- O -
 LEARNER Wins: 2427.0
 LEARNER Losses: 281.0
 LEARNER Ties: 1607.0
