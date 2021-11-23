@@ -137,23 +137,21 @@ class Model():
         features = np.zeros((4))
         
         for lane in lanes:
-            ours = 0
-            opps = 0
+            # number of dangerous 2 in a rows we have
+            if lane.sum() == 2*self.player_id and Moves.EMPTY in lane:
+                features[0] += 1
             
-            # count plays in lane
-            for v in lane:
-                if v == self.player_id:
-                    ours += 1
-                elif not v == Moves.EMPTY:
-                    opps += 1
-                
-            # we have two in a lane, three in a row
-            if ours == 2: features[0] += 1
-            if ours == 3: features[1] += 1
-            
-            # they have two in a lane, three in a row
-            if opps == 2: features[2] += 1
-            if opps == 3: features[3] += 1
+            # number of 3 in a rows we have
+            if lane.sum() == 3*self.player_id:
+                features[1] += 1
+
+            # number of dangerous 2 in a rows they have
+            if lane.sum() == -2*self.player_id and Moves.EMPTY in lane:
+                features[2] += 1
+
+            # number of 3 in a rows they have
+            if lane.sum() == -3*self.player_id:
+                features[3] += 1
         
         return features
 
@@ -224,9 +222,9 @@ class Model():
     
 # this main is rather botched together but it's mostly PoC for me
 if __name__ == '__main__':
-    # USER PARAMS - TERMINATING CONDITIONS both must be met
+    # USER PARAMS
     win_rate_stop = 0.8
-    game_num_stop = 3000
+    game_num_stop = 5000
     slow_mode = False
 
     # create two models to play against each other
@@ -240,17 +238,18 @@ if __name__ == '__main__':
     # training metrics
     learner_won = 0.0
     learner_tied = 0.0
+    learner_lost = 0.0
     total_games = 0.0
-    history = []
+    history = [] # holds win ratio for later graphing
     
-    with output(output_type='list', initial_len=10) as output_lines:
+    with output(output_type='list', initial_len=11) as output_lines:
         # play and train until user-defined terminating condition
         while True:
 
             # new game, tend to metrics and reset board
             total_games += 1
             board.reset_board()
-            output_lines[9] = 'Program status: PLAYING'
+            output_lines[10] = 'Program status: PLAYING'
 
             # output models' states
             output_lines[0] = 'Model X params:\t\t{:.2f} {:.2f} {:.2f} {:.2f} {:.2f} \tLEARNER'.format(model.W[0],model.W[1],model.W[2],model.W[3],model.b)
@@ -279,18 +278,22 @@ if __name__ == '__main__':
 
                 # if slow mode is on, slight delay
                 if slow_mode:
-                    time.sleep(0.5)
+                    time.sleep(0.1)
 
             # the game has ended, update metrics and output accordingly
             if board_status == BoardStatus.XWIN:
                 learner_won += 1
             elif board_status == BoardStatus.TIE:
                 learner_tied += 1
+            elif board_status == BoardStatus.OWIN:
+                learner_lost += 1
+            
             output_lines[5] = 'LEARNER Wins:\t{}'.format(learner_won)
-            output_lines[6] = 'LEARNER Losses:\t{}'.format(total_games-learner_won-learner_tied)
+            output_lines[6] = 'LEARNER Losses:\t{}'.format(learner_lost)
             output_lines[7] = 'LEARNER Ties:\t{}'.format(learner_tied)
             output_lines[8] = 'Win Rate:\t{:.2f}'.format(float(learner_won)/total_games)
-            output_lines[9] = 'Program status: TRAINING'
+            output_lines[9] = 'Win/Loss Rate:\t{:.2f}'.format(float(learner_won)/(learner_lost+1))
+            output_lines[10] = 'Program status: TRAINING'
 
 
             # train model on this game
@@ -302,13 +305,9 @@ if __name__ == '__main__':
 
             history.append(win_rate)
             
-            # terminating condition
-            if win_rate > win_rate_stop and total_games > game_num_stop:
+            # terminating condition (50 is there bc sometimes it gets lucky and quits early)
+            if win_rate > win_rate_stop and total_games > 50 or total_games > game_num_stop:
                 break
-
-            # if slow mode is on, slight delay
-            if slow_mode:
-                time.sleep(0.5)
         
         plt.title('Win Rate Per Iteration')
         plt.plot(history)
