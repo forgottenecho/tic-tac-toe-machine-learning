@@ -220,10 +220,9 @@ class Model():
 
         return xtrain, np.array(ytrain_list)
     
-# this main is rather botched together but it's mostly PoC for me
 if __name__ == '__main__':
     # USER PARAMS
-    win_rate_stop = 0.8
+    win_ratio_stop = 0.8
     game_num_stop = 5000
     slow_mode = False
 
@@ -291,8 +290,8 @@ if __name__ == '__main__':
             output_lines[5] = 'LEARNER Wins:\t{}'.format(learner_won)
             output_lines[6] = 'LEARNER Losses:\t{}'.format(learner_lost)
             output_lines[7] = 'LEARNER Ties:\t{}'.format(learner_tied)
-            output_lines[8] = 'Win Rate:\t{:.2f}'.format(float(learner_won)/total_games)
-            output_lines[9] = 'Win/Loss Rate:\t{:.2f}'.format(float(learner_won)/(learner_lost+1))
+            output_lines[8] = 'Win/Total Ratio:\t{:.2f}'.format(float(learner_won)/total_games)
+            output_lines[9] = 'Win/Loss Ratio:\t{:.2f}'.format(float(learner_won)/(learner_lost+1))
             output_lines[10] = 'Program status: TRAINING'
 
 
@@ -301,14 +300,14 @@ if __name__ == '__main__':
             model.fit(xtrain, ytrain)
             
             # handle metrics
-            win_rate = float(learner_won)/total_games
-
-            history.append(win_rate)
+            win_loss_ratio = float(learner_won)/(learner_lost+1)
+            win_total_ratio = float(learner_won)/total_games
+            history.append(win_loss_ratio)
             
             # terminating condition (50 is there bc sometimes it gets lucky and quits early)
-            if win_rate > win_rate_stop and total_games > 50 or total_games > game_num_stop:
+            if win_total_ratio > win_ratio_stop and total_games > 50 or total_games > game_num_stop:
                 break
         
-        plt.title('Win Rate Per Iteration')
+        plt.title('Win to Loss Ratio per Iteration')
         plt.plot(history)
         plt.show()

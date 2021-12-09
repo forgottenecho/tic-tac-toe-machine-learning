@@ -15,7 +15,7 @@ Just run the script and wait for it to finish training.
 Afterwards you will see a graph of the model's progress.
 
 There are a few user params you can set before running the script:
-- script will quit the training after the model achieves `win_rate_stop`
+- script will quit the training after the model achieves `win_ratio_stop`
 - use `game_num_stop` as a maximum number of games to train on
 - set `slow_mode` to `True` if you want to watch the process more closely
 
