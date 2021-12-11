@@ -1,9 +1,15 @@
 # tic-tac-toe-machine-learning
-A full-circle machine learning system for tic tac toe.  
+A full-circle machine learning system for tic tac toe.
+
+Built without any machine learning framework, so all these are all implemented **from scratch**:
+- the model class
+- fit function
+- gradient descent algorithm
+- training loop 
 
 Task: to win tic tac toe  
 Performance: win ratio  
-Experience: learning model plays against a fixed-weight model  
+Experience: learning model (x) plays against a fixed-weight model (O)  
 
 ## Dependencies
 - reprint
